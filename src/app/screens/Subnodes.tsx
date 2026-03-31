@@ -117,13 +117,13 @@ export function Subnodes() {
                     </div>
                     
                     <div className="flex gap-1.5 flex-wrap">
-                      {/* ✨ THE CRASH FIX: Guarantee an array is passed before mapping! */}
-                      {(person.specializations || []).slice(0, 2).map((tag: string) => (
-                        <span key={tag} className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs rounded-md font-mono">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                    {/* ✨ THE BULLETPROOF FIX: Check if it's actually an array before trying to slice it! */}
+                    {Array.isArray(person.specializations) && person.specializations.slice(0, 2).map((tag: string) => (
+                      <span key={tag} className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs rounded-md font-mono">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                   </div>
 
                   <div className="flex items-center justify-between border-t border-zinc-800 pt-4 mt-4">
