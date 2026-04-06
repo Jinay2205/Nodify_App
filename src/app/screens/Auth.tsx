@@ -46,12 +46,17 @@ export function Auth() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          // This redirects them back to your app after Google approves them
-          redirectTo: window.location.origin + '/dashboard' 
+          redirectTo: window.location.origin + '/dashboard',
+          // ✨ NEW: Explicitly ask Google for Calendar access!
+          scopes: 'https://www.googleapis.com/auth/calendar.events',
+          // ✨ NEW: Force the consent screen so Google actually updates your token!
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         }
       });
       if (error) throw error;
-      // Note: We don't navigate manually here because Google will redirect the browser entirely
     } catch (err: any) {
       setError(err.message);
       setIsGoogleLoading(false);

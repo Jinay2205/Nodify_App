@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase"; 
+import { BookingModal } from "../components/nodify/BookingModal";
 import { 
-  Sparkles, Mail, Phone, Video, Play, Loader2, Coffee, ArrowLeft, Calendar, ChevronDown
+  Sparkles, Mail, Phone, Video, Play, Loader2, Coffee, ArrowLeft, Calendar, ChevronDown, UserMinus
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
@@ -41,7 +42,50 @@ export function ConnectionDetail() {
   const [showCustomPicker, setShowCustomPicker] = useState(false);
   const [reconnectDate, setReconnectDate] = useState<string | null>(null);
   const [tempDate, setTempDate] = useState<string>(""); // Holds the date while typing
+  const [isDeletingNode, setIsDeletingNode] = useState(false);
+  
+  // --- CALENDAR BOOKING STATE ---
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [bookingTime, setBookingTime] = useState({ 
+    hour: '10', minute: '00', period: 'AM', duration: '30' 
+  });
 
+  // ✨ GOOGLE CALENDAR SYNC FUNCTION
+  // ✨ GOOGLE CALENDAR SYNC FUNCTION
+  const syncToGoogleCalendar = async () => {
+    setIsSyncing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) throw new Error("No active session");
+      if (!session.provider_token) throw new Error("No Google Token. Sign out and back in.");
+
+      // ✨ NEW: Ask the browser for the user's exact timezone!
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      const { error } = await supabase.functions.invoke('calendar-sync', {
+        body: {
+          contactName: contact.name,
+          date: reconnectDate, 
+          time: `${bookingTime.hour}:${bookingTime.minute} ${bookingTime.period}`,
+          duration: bookingTime.duration,
+          providerToken: session.provider_token,
+          timeZone: userTimeZone // ✨ Send the timezone to the backend
+        }
+      });
+      
+      if (error) throw error;
+      
+      setIsBookingModalOpen(false);
+      alert("Success! Time blocked on Google Calendar."); 
+    } catch (error: any) {
+      console.error("Error syncing to calendar:", error);
+      alert(error.message || "Failed to sync to calendar.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
   // 1. FETCH THE PROFILE DATA
   useEffect(() => {
     const fetchProfile = async () => {
@@ -122,11 +166,69 @@ export function ConnectionDetail() {
       
       setReconnectDate(newDateStr);
       setShowCustomPicker(false); // Close the picker on success
+      // ✨ Trigger the modal after they pick a date!
+      setIsBookingModalOpen(true);
 
     } catch (error) {
       console.error("Failed to update reconnect date:", error);
     } finally {
       setIsUpdatingDate(false);
+    }
+  };
+  // ✨ FUNCTION TO REMOVE THE NODE (OPTION B - FIXED)
+  const handleRemoveNode = async () => {
+    if (!id || !contact) return;
+
+    if (!window.confirm(`Are you sure? This will permanently remove ${contact.name} from your CRM and sever the connection.`)) {
+      return;
+    }
+
+    setIsDeletingNode(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      // 1. Find the friend's global User ID safely
+      let targetGlobalId = null;
+      const { data: nameMatch } = await supabase.from('users').select('id').eq('full_name', contact.name).limit(1);
+      
+      if (nameMatch && nameMatch.length > 0) {
+        targetGlobalId = nameMatch[0].id;
+      } else {
+        const { data: firstMatch } = await supabase.from('users').select('id').eq('name', contact.name).limit(1);
+        if (firstMatch && firstMatch.length > 0) targetGlobalId = firstMatch[0].id;
+      }
+
+      // 2. Sever the social link in connection_requests using the real global IDs
+      if (targetGlobalId) {
+        await supabase
+          .from('connection_requests')
+          .delete()
+          .or(`and(sender_id.eq.${user.id},receiver_id.eq.${targetGlobalId}),and(sender_id.eq.${targetGlobalId},receiver_id.eq.${user.id})`);
+      }
+
+      // 3. Delete from YOUR contacts
+      await supabase.from('contacts').delete().eq('id', id);
+
+      // 4. Attempt to remove YOU from THEIR CRM
+      const { data: myProfile } = await supabase.from('users').select('full_name, name').eq('id', user.id).single();
+      const myName = myProfile?.full_name || myProfile?.name;
+      
+      if (myName && targetGlobalId) {
+         await supabase.from('contacts').delete()
+          .eq('user_id', targetGlobalId)
+          .eq('name', myName);
+      }
+
+      // 5. Navigate back to My Nodes
+      navigate('/mynodes');
+    } catch (error: any) {
+      console.error("Error removing node:", error);
+      alert("Could not remove node: " + error.message);
+      setIsDeletingNode(false);
     }
   };
 
@@ -316,6 +418,16 @@ export function ConnectionDetail() {
             </span>
           </div>
         </div>
+        <div className="mt-auto pt-8">
+          <button
+            onClick={handleRemoveNode}
+            disabled={isDeletingNode}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-red-400 bg-red-400/10 hover:bg-red-400/20 transition-colors disabled:opacity-50"
+          >
+            {isDeletingNode ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserMinus className="w-4 h-4" />}
+            Remove Node
+          </button>
+        </div>
       </aside>
 
       {/* Main Content (Intelligence Feed) */}
@@ -428,7 +540,19 @@ export function ConnectionDetail() {
           </div>
         </div>
       </main>
-      
+      {/* ✨ RENDER THE MODAL AT THE ROOT LEVEL */}
+      {contact && (
+        <BookingModal 
+          isOpen={isBookingModalOpen}
+          onClose={() => setIsBookingModalOpen(false)}
+          onConfirm={syncToGoogleCalendar}
+          isSyncing={isSyncing}
+          contactName={contact.name}
+          date={reconnectDate}
+          bookingTime={bookingTime}
+          setBookingTime={setBookingTime}
+        />
+      )}
     </div>
   );
 }

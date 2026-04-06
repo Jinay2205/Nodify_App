@@ -1,17 +1,44 @@
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { supabase } from "../../lib/supabase";
 import {
-  LayoutDashboard, Network, Users, UserPlus, User, LogOut
+  LayoutDashboard, Network, Users, UserPlus, User, LogOut, Inbox
 } from "lucide-react";
 
 export function Sidebar() {
   const navigate = useNavigate();
-  const location = useLocation(); // ✨ MAGIC: Gets the current URL path!
+  const location = useLocation(); 
 
-  // Helper function to figure out if a button should be highlighted
+  // ✨ NEW: State to hold the number of unread requests
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // ✨ NEW: Fetch the count of pending requests
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // We use { count: 'exact', head: true } because we don't need the actual data, just the number!
+        const { count, error } = await supabase
+          .from('connection_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('receiver_id', user.id)
+          .eq('status', 'pending');
+
+        if (!error && count !== null) {
+          setPendingCount(count);
+        }
+      } catch (error) {
+        console.error("Error fetching notification count:", error);
+      }
+    };
+
+    fetchPendingCount();
+  }, [location.pathname]); // Re-runs every time the user navigates to a new page!
+
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
-  // Shared CSS for all buttons so we don't repeat Tailwind classes
   const baseBtnClass = "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors";
   const inactiveBtnClass = "text-zinc-400 hover:bg-zinc-900 hover:text-white";
   const activeBtnClass = "bg-zinc-900 text-white";
@@ -49,6 +76,27 @@ export function Sidebar() {
         <button onClick={() => navigate('/add')} className={`${baseBtnClass} ${isActive('/add') ? activeBtnClass : inactiveBtnClass}`}>
           <UserPlus className="w-4 h-4" />
           <span className="text-sm font-medium">Add Connect</span>
+        </button>
+        
+        {/* ✨ UPDATED INBOX BUTTON WITH NOTIFICATION BADGE */}
+        <button onClick={() => navigate('/inbox')} className={`${baseBtnClass} ${isActive('/inbox') ? activeBtnClass : inactiveBtnClass} justify-between`}>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Inbox className="w-4 h-4" />
+              {/* Little red dot on the icon itself */}
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[#09090B]" />
+              )}
+            </div>
+            <span className="text-sm font-medium">Inbox</span>
+          </div>
+          
+          {/* Number badge on the right side */}
+          {pendingCount > 0 && (
+            <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full animate-in zoom-in duration-300">
+              {pendingCount}
+            </span>
+          )}
         </button>
       </nav>
 

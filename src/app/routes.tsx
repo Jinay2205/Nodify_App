@@ -8,6 +8,7 @@ import { Subnodes } from "./screens/Subnodes";
 import { MyNodes } from "./screens/MyNodes"; 
 import { ProtectedRoute } from "./components/ProtectedRoute"; 
 import { Profile } from "./screens/Profile";
+import { Inbox } from "./screens/Inbox";
 
 export const router = createBrowserRouter([
   // 🔓 PUBLIC ROUTES
@@ -21,4 +22,5 @@ export const router = createBrowserRouter([
   { path: "/subnodes", element: <ProtectedRoute><Subnodes /></ProtectedRoute> }, 
   { path: "/mynodes", element: <ProtectedRoute><MyNodes /></ProtectedRoute> }, 
   { path: "/profile", element: <ProtectedRoute><Profile /></ProtectedRoute> },
+  { path: "/inbox", element: <ProtectedRoute><Inbox /></ProtectedRoute> },
 ]);
