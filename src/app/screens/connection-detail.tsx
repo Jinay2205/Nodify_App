@@ -493,9 +493,10 @@ export function ConnectionDetail() {
               </div>
               
               <div className="flex-1 space-y-3">
-                <textarea
+              <textarea
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#4ADE80] resize-none"
-                  placeholder={`Summarize your meeting notes with ${contact.name.split(' ')[0]} here...`}
+                  // ✨ UPDATED PLACEHOLDER
+                  placeholder={`Brain-dump your meeting with ${contact.name.split(' ')[0]} here. Nodify's AI will summarize it into clean bullet points...`}
                   rows={3}
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
