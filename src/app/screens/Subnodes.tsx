@@ -202,33 +202,40 @@ export function Subnodes() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-zinc-800 pt-4 mt-4">
-                      <MonoText className="text-xs text-zinc-500">{person.education_level || "Alumni"}</MonoText>
+                    {/* ✨ FIXED ALIGNMENT & REMOVED COMMA TYPO */}
+                    <div className="flex items-center justify-between border-t border-zinc-800 pt-4 mt-auto">
                       
-                      {/* Replace the static "Connected" text with the Disconnect button */}
-                      {status === 'accepted' && (
-                        <button 
-                          onClick={() => handleRemoveConnection(person)} 
-                          disabled={isSending === person.id}
-                          className="flex items-center gap-1.5 text-xs text-red-400 font-medium bg-red-400/10 hover:bg-red-400/20 px-3 py-1.5 rounded-full transition-colors"
-                        >
-                          {isSending === person.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserMinus className="w-3 h-3" />}
-                          Disconnect
-                        </button>
-                      )},
-                      {status === 'sent' && <div className="flex items-center gap-1.5 text-xs text-zinc-400 bg-zinc-800 px-3 py-1.5 rounded-full"><Clock className="w-3 h-3" /> Request Sent</div>}
-                      {status === 'received' && <div className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-400/10 px-3 py-1.5 rounded-full">Check Inbox</div>}
-                      {status === 'declined' && <div className="flex items-center gap-1.5 text-xs text-red-400 bg-red-400/10 px-3 py-1.5 rounded-full">Declined</div>}
-                      {status === 'none' && (
-                        <button 
-                          onClick={() => handleSendRequest(person.id)}
-                          disabled={isSending === person.id}
-                          className="flex items-center gap-1.5 text-xs text-black font-medium bg-white hover:bg-zinc-200 px-4 py-1.5 rounded-full transition-colors disabled:opacity-50"
-                        >
-                          {isSending === person.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
-                          Connect
-                        </button>
-                      )}
+                      <div className="truncate pr-4">
+                        <MonoText className="text-xs text-zinc-500">
+                          {person.education_level || "Alumni"}
+                        </MonoText>
+                      </div>
+                      
+                      <div className="shrink-0 flex items-center">
+                        {status === 'accepted' && (
+                          <button 
+                            onClick={() => handleRemoveConnection(person)} 
+                            disabled={isSending === person.id}
+                            className="flex items-center gap-1.5 text-xs text-red-400 font-medium bg-red-400/10 hover:bg-red-400/20 px-3 py-1.5 rounded-full transition-colors"
+                          >
+                            {isSending === person.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserMinus className="w-3 h-3" />}
+                            Disconnect
+                          </button>
+                        )}
+                        {status === 'sent' && <div className="flex items-center gap-1.5 text-xs text-zinc-400 bg-zinc-800 px-3 py-1.5 rounded-full"><Clock className="w-3 h-3" /> Request Sent</div>}
+                        {status === 'received' && <div className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-400/10 px-3 py-1.5 rounded-full">Check Inbox</div>}
+                        {status === 'declined' && <div className="flex items-center gap-1.5 text-xs text-red-400 bg-red-400/10 px-3 py-1.5 rounded-full">Declined</div>}
+                        {status === 'none' && (
+                          <button 
+                            onClick={() => handleSendRequest(person.id)}
+                            disabled={isSending === person.id}
+                            className="flex items-center gap-1.5 text-xs text-black font-medium bg-white hover:bg-zinc-200 px-4 py-1.5 rounded-full transition-colors disabled:opacity-50"
+                          >
+                            {isSending === person.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
+                            Connect
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )

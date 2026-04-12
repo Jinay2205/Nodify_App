@@ -19,6 +19,92 @@ const getIcon = (type: string) => {
     default: return <Mail className="w-4 h-4 text-[#4ADE80]" />;
   }
 };
+// ✨ NEW: Isolated component to handle the open/close state of each individual log
+function InteractionCard({ interaction }: { interaction: any }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Safely parse the JSON (handles old notes that might not have it yet)
+  const aiSummary = interaction.ai_summary || {};
+  const hasAiSummary = Object.keys(aiSummary).length > 0;
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    });
+  };
+
+  return (
+    <div className="relative">
+      <div className="absolute -left-[33px] top-1 w-8 h-8 rounded-full border border-zinc-700 bg-[#18181B] flex items-center justify-center z-10">
+        {getIcon(interaction.interaction_type)}
+      </div>
+      
+      <div className="bg-[#18181B] border border-zinc-800 rounded-xl p-5 ml-4">
+        <p className="text-[#4ADE80] font-mono text-xs mb-3 uppercase tracking-wider">
+          {formatDate(interaction.created_at)} • {interaction.interaction_type}
+        </p>
+
+        {hasAiSummary ? (
+          <div className="space-y-4">
+            {/* 1. TL;DR */}
+            {aiSummary.tl_dr && (
+              <p className="text-white text-sm font-medium leading-relaxed">
+                {aiSummary.tl_dr}
+              </p>
+            )}
+
+            {/* 2. Action Items */}
+            {aiSummary.action_items && aiSummary.action_items.length > 0 && (
+              <div className="bg-[#4ADE80]/10 border border-[#4ADE80]/20 rounded-lg p-3">
+                <h4 className="text-[10px] font-mono text-[#4ADE80] uppercase tracking-wider mb-2">Action Items</h4>
+                <ul className="space-y-1.5">
+                  {aiSummary.action_items.map((item: string, i: number) => (
+                    <li key={i} className="text-sm text-zinc-300 flex items-start gap-2">
+                      <span className="text-[#4ADE80] mt-0.5">•</span> {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 3. Personal Context */}
+            {aiSummary.personal_context && (
+              <div className="border-l-2 border-amber-500/50 pl-3 py-1">
+                <p className="text-sm text-zinc-400 italic">
+                  "{aiSummary.personal_context}"
+                </p>
+              </div>
+            )}
+
+            {/* 4. The Raw Notes Toggle */}
+            <div className="pt-3 border-t border-zinc-800/50 mt-4">
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition-colors outline-none"
+              >
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                {isExpanded ? "Hide Raw Notes" : "View Raw Notes"}
+              </button>
+
+              {isExpanded && (
+                <div className="mt-3 p-3 bg-[#09090B] rounded border border-zinc-800/50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <p className="text-sm text-zinc-400 whitespace-pre-wrap leading-relaxed">
+                    {interaction.notes}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Fallback for old logs that don't have Groq JSON yet */
+          <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">
+            {interaction.notes}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function ConnectionDetail() {
   const { id } = useParams(); 
@@ -115,7 +201,8 @@ export function ConnectionDetail() {
     try {
       const { data, error } = await supabase
         .from('interactions')
-        .select('id, created_at, interaction_type, notes')
+        // ✨ ADDED ai_summary TO THIS QUERY
+        .select('id, created_at, interaction_type, notes, ai_summary') 
         .eq('contact_id', id) 
         .order('created_at', { ascending: false });
 
@@ -521,19 +608,7 @@ export function ConnectionDetail() {
                 <div className="text-zinc-500 text-sm ml-4">No interactions logged yet.</div>
               ) : (
                 interactions.map((interaction) => (
-                  <div key={interaction.id} className="relative">
-                    <div className="absolute -left-[33px] top-1 w-8 h-8 rounded-full border border-zinc-700 bg-[#18181B] flex items-center justify-center">
-                      {getIcon(interaction.interaction_type)}
-                    </div>
-                    <div className="bg-[#18181B] border border-zinc-800 rounded-xl p-5 ml-4">
-                      <p className="text-[#4ADE80] font-mono text-xs mb-2 uppercase tracking-wider">
-                        {formatDate(interaction.created_at)} • {interaction.interaction_type}
-                      </p>
-                      <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">
-                        {interaction.notes}
-                      </p>
-                    </div>
-                  </div>
+                  <InteractionCard key={interaction.id} interaction={interaction} />
                 ))
               )}
             </div>

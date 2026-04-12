@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { supabase } from "../../lib/supabase"; // ✨ IMPORTED SUPABASE
+import { supabase } from "../../lib/supabase"; 
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
@@ -25,7 +25,7 @@ import {
   Palette,
   Users,
   Compass,
-  Loader2 // ✨ IMPORTED LOADER
+  Loader2 
 } from "lucide-react";
 
 
@@ -124,7 +124,7 @@ const specializations: Record<string, string[]> = {
 export function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [isSaving, setIsSaving] = useState(false); // ✨ ADDED SAVING STATE
+  const [isSaving, setIsSaving] = useState(false); 
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -144,8 +144,6 @@ export function Onboarding() {
     }
   };
 
-  // ✨ THE MAGIC SUPABASE SAVE FUNCTION
-  // ✨ THE MAGIC SUPABASE SAVE FUNCTION
   const handleFinish = async () => {
     setIsSaving(true);
     try {
@@ -164,7 +162,7 @@ export function Onboarding() {
         .from('users')
         .insert({
           id: user.id,
-          full_name: formData.fullName, // ✨ CHANGED 'name' TO 'full_name' HERE!
+          full_name: formData.fullName, 
           school: formData.university,
           education_level: formData.educationLevel,
           primary_interest: categoryLabel,
@@ -172,6 +170,24 @@ export function Onboarding() {
         });
 
       if (error) throw error;
+
+      // ✨ THE FOUNDER EASTER EGG
+      // Instantly inject the Founder into their network so the Dashboard isn't empty
+      const { error: seedError } = await supabase
+        .from('contacts')
+        .insert([
+          {
+            user_id: user.id,
+            name: 'Jinay Shah',
+            school: 'Rice University',
+            education_level: 'Master\'s',
+            primary_interest: 'Building Nodify',
+            specializations: ['Startups', 'Product', 'Engineering'],
+            warmth_level: 'warm'
+          }
+        ]);
+
+      if (seedError) console.error("Failed to seed founder:", seedError);
 
       // 4. Success! Send them to their brand new dashboard
       navigate("/dashboard");
@@ -326,7 +342,6 @@ export function Onboarding() {
                 Back
               </Button>
               <Button
-                // ✨ FIX: If they pick "Exploring", skip step 3 and save directly!
                 onClick={selectedCategory === "exploring" ? handleFinish : () => setStep(3)}
                 disabled={!selectedCategory || isSaving}
                 className="flex-1 bg-[#4ADE80] hover:bg-[#22C55E] text-black"
