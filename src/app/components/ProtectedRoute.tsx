@@ -1,38 +1,44 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate, useLocation, Outlet } from "react-router"; 
 import { supabase } from "../../lib/supabase"; 
 import { Loader2 } from "lucide-react";
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+// ✨ FIX 1: No more { children } props!
+export function ProtectedRoute() {
   const navigate = useNavigate();
-  const location = useLocation(); // Helps us know what page they are trying to access
-  const [isLoading, setIsLoading] = useState(true); // Default to true!
+  const location = useLocation();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkAuthAndRoute = async () => {
+      // 1. Check for a valid session
       const { data: { session } } = await supabase.auth.getSession();
       
-      // 1. Not logged in? Kick them to the login screen.
       if (!session) {
         navigate('/');
         return;
       }
 
-      // 2. Safely grab the timestamps
-      // (Fallback to created_at if last_sign_in_at is undefined for some reason)
-      const createdAt = new Date(session.user.created_at).getTime();
-      const lastSignIn = new Date(session.user.last_sign_in_at || session.user.created_at).getTime();
+      // ✨ FIX 2: The Bulletproof Database Check
+      // We ask the database if they have a name saved instead of guessing with timestamps.
+      const { data: profile } = await supabase
+        .from('users')
+        .select('full_name') // (Change this to 'has_onboarded' if you added that column!)
+        .eq('id', session.user.id)
+        .single();
 
-      // ✨ THE FIX: Supabase timestamps can sometimes be a few milliseconds apart. 
-      // Checking if they happened within 5 seconds of each other is bulletproof.
-      const isNewUser = Math.abs(lastSignIn - createdAt) < 5000;
+      // If they don't have a name saved, they need to onboard.
+      const needsOnboarding = !profile?.full_name;
 
-      // 3. The Traffic Cop Logic
-      if (isNewUser && location.pathname !== '/onboarding') {
-        // If they are new, but trying to go anywhere else, force them to onboarding
+      // 3. The Traffic Cop Directives
+      if (needsOnboarding && location.pathname !== '/onboarding') {
+        // Stop! You haven't finished onboarding.
         navigate('/onboarding');
+      } else if (!needsOnboarding && location.pathname === '/onboarding') {
+        // Stop! You already onboarded, you shouldn't be here.
+        navigate('/dashboard');
       } else {
-        // If they are an old user, OR if they are already on the onboarding page, let them render the page!
+        // Green light! 
         setIsLoading(false); 
       }
     };
@@ -40,8 +46,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     checkAuthAndRoute();
   }, [navigate, location.pathname]);
 
-  // While the traffic cop is thinking, show a sleek full-screen loader. 
-  // No dashboard flicker!
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#09090B] flex flex-col items-center justify-center">
@@ -53,6 +57,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Once isLoading is false, paint the actual page.
-  return <>{children}</>;
+  // ✨ FIX 3: Return <Outlet /> so React Router can inject the correct page
+  return <Outlet />;
 }

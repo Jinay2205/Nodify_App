@@ -178,9 +178,9 @@ export function Onboarding() {
         .insert([
           {
             user_id: user.id,
-            name: 'Jinay Shah',
+            name: 'Aadi Chahal',
             school: 'Rice University',
-            education_level: 'Master\'s',
+            education_level: 'Undergraduate',
             primary_interest: 'Building Nodify',
             specializations: ['Startups', 'Product', 'Engineering'],
             warmth_level: 'warm'

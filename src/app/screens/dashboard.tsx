@@ -62,10 +62,8 @@ export function Dashboard() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
-        if (!user) {
-          navigate('/');
-          return;
-        }
+        // Let the Traffic Cop handle kicking unauthenticated users out!
+        if (!user) return; 
 
         setActiveUserId(user.id);
 
@@ -75,22 +73,16 @@ export function Dashboard() {
           .eq('id', user.id)
           .single();
 
-        if (profileError || !profile) {
-          console.error("Bouncer blocked user:", profileError);
-          navigate('/onboarding');
-          return; 
+        if (profileError) {
+          console.error("Error fetching profile data:", profileError);
         }
 
-        // ✨ 3. Save JUST the name to state, not the whole greeting
-        if (profile.full_name) {
+        // ✨ We only set the name if it exists. No routing happens here!
+        if (profile && profile.full_name) {
           setUserName(profile.full_name.split(' ')[0]);
         }
 
-        // ... (Keep your existing Supabase queries for actionsData and contactsData here) ...
-
-        
-
-        // 1. Fetch the Daily Action Candidates from your new SQL View!
+        // 1. Fetch the Daily Action Candidates from your new SQL View
         const { data: actionsData, error: actionsError } = await supabase
           .from('daily_action_candidates')
           .select('*')
@@ -347,7 +339,7 @@ export function Dashboard() {
                               className="flex items-center gap-4 cursor-pointer" 
                               onClick={() => {
                                 // ✨ HIJACK THE CLICK IF IT'S THE FOUNDER
-                                if (item.name === 'Jinay Shah') {
+                                if (item.name === 'Aadi Chahal') {
                                   setFounderContactId(item.contact_id);
                                   setIsFounderModalOpen(true);
                                 } else {
@@ -356,14 +348,14 @@ export function Dashboard() {
                               }}
                             >
                               <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-700 flex items-center justify-center font-bold text-[#4ADE80]">
-                                {item.name === 'Jinay Shah' ? '👋' : item.name.charAt(0)}
+                                {item.name === 'Aadi Chahal' ? '👋' : item.name.charAt(0)}
                               </div>
                               <div>
                                 <h3 className="text-white font-medium group-hover:text-[#4ADE80] transition-colors">{item.name}</h3>
                                 <p className="text-sm text-zinc-400 mt-0.5 flex items-center gap-2">
                                   {/* ✨ CUSTOM OVERRIDE FOR THE SUBTEXT */}
-                                  <span className={`w-1.5 h-1.5 rounded-full ${item.name === 'Jinay Shah' ? 'bg-[#4ADE80]' : 'bg-red-500 animate-pulse'}`}></span>
-                                  {item.name === 'Jinay Shah' 
+                                  <span className={`w-1.5 h-1.5 rounded-full ${item.name === 'Aadi Chahal' ? 'bg-[#4ADE80]' : 'bg-red-500 animate-pulse'}`}></span>
+                                  {item.name === 'Aadi Chahal' 
                                     ? "Click to read a message from the founder." 
                                     : getActionReason(item.last_touch_date)}
                                 </p>
@@ -387,7 +379,7 @@ export function Dashboard() {
                   </div>
 
                   {/* ✨ CONDITIONAL: Mad Libs UI vs. The Full Table */}
-                  {contacts.length === 0 || (contacts.length === 1 && contacts[0].name === 'Jinay Shah') ? (
+                  {contacts.length === 0 || (contacts.length === 1 && contacts[0].name === 'Aadi Chahal') ? (
                     <div className="pt-12 pb-8 flex flex-col items-center justify-center animate-in slide-in-from-bottom-4 duration-500">
                       <div className="text-center space-y-6 max-w-lg w-full">
                         <div className="w-16 h-16 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -532,7 +524,7 @@ export function Dashboard() {
                 </div>
                 <div>
                   <h3 className="text-xl text-white font-medium">Welcome to Nodify.</h3>
-                  <p className="text-[#4ADE80] text-sm font-mono tracking-wide">FROM JINAY SHAH</p>
+                  <p className="text-[#4ADE80] text-sm font-mono tracking-wide">BY AADI CHAHAL</p>
                 </div>
               </div>
 
@@ -548,7 +540,7 @@ export function Dashboard() {
                   This profile is just a sandbox for you to test out the "Draft Message" feature. Once you get the hang of it, feel free to remove me and start adding your own real network. 
                 </p>
                 <p className="font-medium text-white pt-2">
-                  Happy connecting,<br/>Jinay
+                  Happy connecting,<br/>Aadi
                 </p>
               </div>
 

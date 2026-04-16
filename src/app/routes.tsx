@@ -9,20 +9,25 @@ import { MyNodes } from "./screens/MyNodes";
 import { ProtectedRoute } from "./components/ProtectedRoute"; 
 import { Profile } from "./screens/Profile";
 import { Inbox } from "./screens/Inbox";
-import { GrowPage } from "./screens/GrowPage"; // ✨ Import the new screen
+import { GrowPage } from "./screens/GrowPage";
 
 export const router = createBrowserRouter([
-  // 🔓 PUBLIC ROUTES
+  // 🔓 PUBLIC ROUTE (Anyone can see the login screen)
   { path: "/", element: <Auth /> },                 
-  { path: "/onboarding", element: <Onboarding /> }, 
 
-  // 🔒 PROTECTED ROUTES
-  { path: "/dashboard", element: <ProtectedRoute><Dashboard /></ProtectedRoute> },   
-  { path: "/connection/:id", element: <ProtectedRoute><ConnectionDetail /></ProtectedRoute> },
-  { path: "/add", element: <ProtectedRoute><AddConnect /></ProtectedRoute> },
-  { path: "/subnodes", element: <ProtectedRoute><Subnodes /></ProtectedRoute> }, 
-  { path: "/mynodes", element: <ProtectedRoute><MyNodes /></ProtectedRoute> }, 
-  { path: "/profile", element: <ProtectedRoute><Profile /></ProtectedRoute> },
-  { path: "/inbox", element: <ProtectedRoute><Inbox /></ProtectedRoute> },
-  { path: "/grow", element: <ProtectedRoute><GrowPage /></ProtectedRoute> }, // ✨ Add the Protected Route
+  // 🔒 THE PROTECTED ZONE (The Traffic Cop guards all of these)
+  {
+    element: <ProtectedRoute />, // This wraps EVERYTHING below it
+    children: [
+      { path: "/onboarding", element: <Onboarding /> }, 
+      { path: "/dashboard", element: <Dashboard /> },   
+      { path: "/connection/:id", element: <ConnectionDetail /> },
+      { path: "/add", element: <AddConnect /> },
+      { path: "/subnodes", element: <Subnodes /> }, 
+      { path: "/mynodes", element: <MyNodes /> }, 
+      { path: "/profile", element: <Profile /> },
+      { path: "/inbox", element: <Inbox /> },
+      { path: "/grow", element: <GrowPage /> },
+    ]
+  }
 ]);

@@ -24,14 +24,16 @@ export function Auth() {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        // NEW USER: Send them to the questionnaire!
-        navigate('/onboarding'); 
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // RETURNING USER: Skip the questionnaire, go straight to the app!
-        navigate('/dashboard'); 
       }
+      
+      // ✨ THE FIX: Send EVERYONE to the protected zone. 
+      // The Traffic Cop (ProtectedRoute) will instantly catch them and route them 
+      // to Onboarding or Dashboard while the loading spinner is active!
+      navigate('/dashboard'); 
+      
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -46,10 +48,9 @@ export function Auth() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
+          // ✨ THE FIX: Let Google send them to the protected zone so the Cop catches them.
           redirectTo: window.location.origin + '/dashboard',
-          // ✨ NEW: Explicitly ask Google for Calendar access!
           scopes: 'https://www.googleapis.com/auth/calendar.events',
-          // ✨ NEW: Force the consent screen so Google actually updates your token!
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -69,9 +70,12 @@ export function Auth() {
         
         {/* Branding */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 bg-zinc-900 border border-zinc-700 rounded-xl flex items-center justify-center mb-4">
-            <span className="text-[#4ADE80] font-bold text-2xl">N</span>
-          </div>
+          {/* ✨ THE REAL LOGO */}
+          <img 
+            src="/Logo_Front.png" 
+            alt="Nodify Logo" 
+            className="w-14 h-14 object-contain mb-4 drop-shadow-[0_0_15px_rgba(74,222,128,0.15)]" 
+          />          
           <h1 className="text-2xl text-white font-medium">
             {isSignUp ? "Create your node" : "Welcome back"}
           </h1>
