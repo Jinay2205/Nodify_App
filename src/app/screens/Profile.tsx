@@ -6,7 +6,7 @@ import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import { Sidebar } from "../components/Sidebar"; 
 import {
-  LayoutDashboard, Network, Users, UserPlus, Loader2, User, LogOut, Save
+  User, Loader2, Save, Copy, Check
 } from "lucide-react";
 
 export function Profile() {
@@ -14,13 +14,17 @@ export function Profile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
+  // ✨ NEW: State to hold the User ID and copy status
+  const [userId, setUserId] = useState("");
+  const [hasCopied, setHasCopied] = useState(false);
+
   // Profile State
   const [formData, setFormData] = useState({
     full_name: "",
     school: "",
     education_level: "",
     primary_interest: "",
-    specializations: "" // We will handle this as a comma-separated string for easy editing
+    specializations: "" 
   });
 
   // 1. Fetch the user's data on load
@@ -32,6 +36,9 @@ export function Profile() {
           navigate('/');
           return;
         }
+
+        // ✨ NEW: Save the ID to state immediately
+        setUserId(user.id);
 
         const { data, error } = await supabase
           .from('users')
@@ -47,7 +54,6 @@ export function Profile() {
             school: data.school || "",
             education_level: data.education_level || "",
             primary_interest: data.primary_interest || "",
-            // Convert the array back to a comma-separated string for the text input
             specializations: data.specializations ? data.specializations.join(", ") : ""
           });
         }
@@ -61,6 +67,14 @@ export function Profile() {
     fetchProfile();
   }, [navigate]);
 
+  // ✨ NEW: Function to handle copying the ID to the clipboard
+  const handleCopyId = () => {
+    if (!userId) return;
+    navigator.clipboard.writeText(userId);
+    setHasCopied(true);
+    setTimeout(() => setHasCopied(false), 2000); // Reset the checkmark after 2 seconds
+  };
+
   // 2. Save the updated data
   const handleSave = async () => {
     setIsSaving(true);
@@ -68,7 +82,6 @@ export function Profile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Convert the comma-separated string back into an array for Postgres
       const specsArray = formData.specializations
         .split(",")
         .map(s => s.trim())
@@ -96,18 +109,10 @@ export function Profile() {
     }
   };
 
-  // 3. The Secure Sign Out Function
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/'); // Kick them back to the login screen
-  };
-
   return (
     <div className="min-h-screen bg-[#09090B] flex">
-      {/* Sidebar with New Bottom Section */}
       <Sidebar />
 
-      {/* Main Content */}
       <main className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-2xl mx-auto space-y-8 mt-4">
           
@@ -128,6 +133,31 @@ export function Profile() {
           ) : (
             <div className="bg-[#18181B] border border-zinc-800 rounded-xl p-8 space-y-6">
               
+              {/* ✨ NEW: The Extension ID Block */}
+              <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-lg space-y-2">
+                <Label className="text-zinc-400 font-mono text-[10px] uppercase tracking-widest">
+                  Chrome Extension ID
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={userId}
+                    readOnly
+                    className="bg-zinc-950 border-zinc-800 text-zinc-500 font-mono text-xs cursor-not-allowed focus-visible:ring-0"
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleCopyId}
+                    className={`${hasCopied ? "bg-[#4ADE80]/20 text-[#4ADE80] hover:bg-[#4ADE80]/30" : "bg-zinc-800 text-white hover:bg-zinc-700"} px-3 transition-colors`}
+                  >
+                    {hasCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-zinc-500">
+                  Paste this ID into the Chrome Extension to sync your captured profiles.
+                </p>
+              </div>
+
+              {/* Standard Profile Fields */}
               <div className="space-y-2">
                 <Label className="text-zinc-300">Full Name</Label>
                 <Input

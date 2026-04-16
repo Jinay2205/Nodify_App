@@ -2,24 +2,21 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { supabase } from "../../lib/supabase";
 import {
-  LayoutDashboard, Network, Users, UserPlus, User, LogOut, Inbox
-} from "lucide-react";
+  LayoutDashboard, Network, Users, UserPlus, User, LogOut, Inbox, Telescope 
+} from "lucide-react"; // ✨ Added Telescope icon
 
 export function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation(); 
 
-  // ✨ NEW: State to hold the number of unread requests
   const [pendingCount, setPendingCount] = useState(0);
 
-  // ✨ NEW: Fetch the count of pending requests
   useEffect(() => {
     const fetchPendingCount = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // We use { count: 'exact', head: true } because we don't need the actual data, just the number!
         const { count, error } = await supabase
           .from('connection_requests')
           .select('*', { count: 'exact', head: true })
@@ -35,7 +32,7 @@ export function Sidebar() {
     };
 
     fetchPendingCount();
-  }, [location.pathname]); // Re-runs every time the user navigates to a new page!
+  }, [location.pathname]);
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
@@ -51,7 +48,12 @@ export function Sidebar() {
   return (
     <aside className="w-64 border-r border-zinc-800 p-6 flex flex-col justify-start shrink-0">
       {/* Logo */}
-      <div className="flex items-center gap-3 mb-10">
+      <div 
+        onClick={() => navigate('/dashboard')}
+        className="flex items-center gap-3 mb-10 cursor-pointer hover:opacity-80 transition-opacity"
+        role="button"
+        title="Return to Dashboard"
+      >
         <img src="/Logo.png" alt="Nodify Logo" className="w-8 h-8 object-contain" />
         <div className="flex flex-col">
           <h2 className="text-xl text-white font-mono leading-none tracking-wide">Nodify</h2>
@@ -65,6 +67,16 @@ export function Sidebar() {
           <LayoutDashboard className="w-4 h-4" />
           <span className="text-sm font-medium">Dashboard</span>
         </button>
+        
+        {/* ✨ NEW: GROW YOUR NETWORK BUTTON */}
+        <button 
+          onClick={() => navigate('/grow')} 
+          className={`${baseBtnClass} ${isActive('/grow') ? 'bg-[#4ADE80]/10 text-[#4ADE80]' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'}`}
+        >
+          <Telescope className="w-4 h-4" />
+          <span className="text-sm font-medium">Grow Network</span>
+        </button>
+
         <button onClick={() => navigate('/mynodes')} className={`${baseBtnClass} ${isActive('/mynodes') ? activeBtnClass : inactiveBtnClass}`}>
           <Network className="w-4 h-4" />
           <span className="text-sm font-medium">My Nodes</span>
@@ -78,12 +90,10 @@ export function Sidebar() {
           <span className="text-sm font-medium">Add Connect</span>
         </button>
         
-        {/* ✨ UPDATED INBOX BUTTON WITH NOTIFICATION BADGE */}
         <button onClick={() => navigate('/inbox')} className={`${baseBtnClass} ${isActive('/inbox') ? activeBtnClass : inactiveBtnClass} justify-between`}>
           <div className="flex items-center gap-3">
             <div className="relative">
               <Inbox className="w-4 h-4" />
-              {/* Little red dot on the icon itself */}
               {pendingCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[#09090B]" />
               )}
@@ -91,7 +101,6 @@ export function Sidebar() {
             <span className="text-sm font-medium">Inbox</span>
           </div>
           
-          {/* Number badge on the right side */}
           {pendingCount > 0 && (
             <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full animate-in zoom-in duration-300">
               {pendingCount}

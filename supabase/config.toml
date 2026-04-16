@@ -463,3 +463,47 @@ entrypoint = "./functions/generate-email-draft/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/generate-email-draft/*.html" ]
+
+[functions.sixtyfour-grow]
+enabled = true
+verify_jwt = true
+import_map = "./functions/sixtyfour-grow/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/sixtyfour-grow/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/sixtyfour-grow/*.html" ]
+
+[functions.sixtyfour-status]
+enabled = true
+verify_jwt = true
+import_map = "./functions/sixtyfour-status/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/sixtyfour-status/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/sixtyfour-status/*.html" ]
+
+[functions.sixtyfour-email]
+enabled = true
+verify_jwt = true
+import_map = "./functions/sixtyfour-email/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/sixtyfour-email/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/sixtyfour-email/*.html" ]
+
+[functions.llama-evaluator]
+enabled = true
+verify_jwt = true
+import_map = "./functions/llama-evaluator/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/llama-evaluator/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/llama-evaluator/*.html" ]
