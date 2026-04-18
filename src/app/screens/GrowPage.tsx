@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabase";
-import { Sidebar } from "../components/Sidebar"; // Adjust the path if needed!
+import { Sidebar } from "../components/Sidebar"; 
 import { Telescope, Search, Loader2, UserPlus, CheckCircle2, Info } from "lucide-react";
 
 export function GrowPage() {
@@ -9,16 +9,24 @@ export function GrowPage() {
   const [results, setResults] = useState<any[]>([]);
   const [statusMessage, setStatusMessage] = useState("");
 
-  // Track which card is currently fetching an email (by index)
   const [fetchingEmailIdx, setFetchingEmailIdx] = useState<number | null>(null);
-  
-  // Store the fetched emails in a dictionary: { index: "email@example.com" }
   const [emails, setEmails] = useState<Record<number, string>>({});
-  // New state to store Llama's custom reasoning
   const [customReasons, setCustomReasons] = useState<Record<number, string>>({});
   const [isEvaluating, setIsEvaluating] = useState(false);
 
-  // The function to call our new backend route
+  // ✨ THE FIX 1: The Lasso. We store the interval ID here so it can't escape and become a ghost.
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✨ THE FIX 2: Cleanup on Unmount. If the user clicks the Sidebar and goes to the 
+  // Dashboard while a search is running, this instantly kills the background polling.
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
+
   const handleFindEmail = async (person: any, idx: number) => {
     setFetchingEmailIdx(idx);
     try {
@@ -28,9 +36,7 @@ export function GrowPage() {
 
       if (error) throw error;
 
-      // Sixtyfour returns emails in an array of arrays: [["email@company.com", "OK", "COMPANY"]]
       const foundEmail = data.email && data.email.length > 0 ? data.email[0][0] : "No email found";
-      
       setEmails(prev => ({ ...prev, [idx]: foundEmail }));
     } catch (err) {
       console.error(err);
@@ -39,9 +45,7 @@ export function GrowPage() {
       setFetchingEmailIdx(null);
     }
   };
-  
 
-  // This runs right after Sixtyfour sets the initial results
   const evaluateProfiles = async (scoutedProfiles: any[], originalQuery: string) => {
     setIsEvaluating(true);
     try {
@@ -51,7 +55,6 @@ export function GrowPage() {
 
       if (error) throw error;
 
-      // Map the array of strings back to the correct card index
       const reasonsMap: Record<number, string> = {};
       data.reasons.forEach((reason: string, idx: number) => {
         reasonsMap[idx] = reason;
@@ -69,11 +72,15 @@ export function GrowPage() {
     e.preventDefault();
     if (!query) return;
 
+    // ✨ THE FIX 3: If they somehow start a new search, violently kill the old polling loop first.
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+
     setIsSearching(true);
     setResults([]);
     setStatusMessage("Initializing AI Scout...");
 
-    // ✨ THE SMART EXTRACTOR: Limit UI results based on prompt
     const numbersFound = query.match(/\d+/g); 
     let displayLimit = 10; 
 
@@ -94,11 +101,11 @@ export function GrowPage() {
       if (error) throw error;
 
       const taskId = data.task_id;
-      
       let attempts = 0;
       const maxAttempts = 40; 
 
-      const interval = setInterval(async () => {
+      // ✨ THE FIX 4: Assign the loop to our lasso (useRef)
+      pollIntervalRef.current = setInterval(async () => {
         attempts++;
         setStatusMessage(`Agent is researching live web... (${attempts})`);
         
@@ -106,12 +113,12 @@ export function GrowPage() {
           body: { task_id: taskId }
         });
 
+        // ✨ THE FIX 5: The 502 Bypass. 
+        // If Cloudflare throws a fit and drops a packet, we DO NOT crash the app anymore.
+        // We just log a warning and let the interval try again in 3 seconds.
         if (pollError) {
-          console.error("Polling error:", pollError);
-          clearInterval(interval);
-          setIsSearching(false);
-          setStatusMessage("Connection lost.");
-          return;
+          console.warn("Network hiccup during poll, trying again...", pollError);
+          return; // Exits this specific loop cycle, but keeps the interval alive!
         }
 
         if (statusData?.status === "completed" || statusData?.status === "finished") {
@@ -124,18 +131,16 @@ export function GrowPage() {
             
           const finalArray = Array.isArray(extractedResults) ? extractedResults : [];
           
-          // 🚀 Slice the array to exactly match what the user asked for
           setResults(finalArray.slice(0, displayLimit));
-          // Kick off the Llama evaluation in the background!
           evaluateProfiles(finalArray.slice(0, displayLimit), query);
           
           setIsSearching(false);
           setStatusMessage("");
-          clearInterval(interval);
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
         }
 
         if (attempts >= maxAttempts) {
-          clearInterval(interval);
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           setIsSearching(false);
           setStatusMessage("Search timed out. Try a more specific prompt.");
         }
@@ -149,7 +154,6 @@ export function GrowPage() {
   };
 
   return (
-    // ✨ 1. Add this wrapper div to create a flex layout
     <div className="min-h-screen bg-[#09090B] flex"> 
         <Sidebar /> 
       <main className="flex-1 overflow-y-auto p-8">
@@ -208,7 +212,6 @@ export function GrowPage() {
               </div>
               
               <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50 mb-4 min-h-[60px]">
-                {/* ✨ THE FIX: Show Llama loading state, then the actual custom reason */}
                 {isEvaluating && !customReasons[idx] ? (
                   <p className="text-zinc-500 text-xs italic flex items-center gap-2">
                     <Loader2 className="w-3 h-3 animate-spin text-[#4ADE80]" />
